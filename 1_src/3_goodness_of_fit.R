@@ -22,25 +22,24 @@ load("2_output/environ.RData")
 # GOF MEASURES ####
 
 ## Extract ####
-gofdt_v1 <- list()
-for (k in names(fit_v1)){
-  for (i in 1:length(fit_v1[[k]])){
-    x <- fitMeasures(fit_v1[[k]][[i]])[c("chisq.scaled","df.scaled","pvalue.scaled","cfi.scaled","tli.scaled","rmsea.scaled","srmr_mplus","aic","bic","bic2","logl","npar","scaling.factor.h0")]
-    
-    gofdt_v1[[k]][[i]] <- setNames(as.numeric(x),c("X2","df","pvalue","CFI","TLI","RMSEA","SRMR","AIC","BIC","aBIC","LL","par","LLcorrectf"))
+gofdt <- list()
+for (i in 1:length(fit)){
+  d <- paste0("data",i,sep="")
+  gofdt[[d]] <- list()
+  for (h in names(fit[[i]])){ # over hypo
+    gofdt[[d]][[h]] <- list()
+    for (m in names(fit[[i]][[h]])){ # over mod
+      gofdt[[d]][[h]][[m]] <- list()
+      for (e in names(fit[[i]][[h]][[m]])){ # over eff
+        x <- fitMeasures(fit[[i]][[h]][[m]][[e]])[c("chisq.scaled","df.scaled","pvalue.scaled","cfi.scaled","tli.scaled","rmsea.scaled","srmr_mplus","aic","bic","bic2","logl","npar","scaling.factor.h0")]
+        gofdt[[d]][[h]][[m]][[e]] <- setNames(as.numeric(x),c("X2","df","pvalue","CFI","TLI","RMSEA","SRMR","AIC","BIC","aBIC","LL","par","LLcorrectf"))
+      }
+      gofdt[[d]][[h]][[m]] <- data.table(s=m,m=names(fit[[i]][[h]][[m]]),dplyr::bind_rows(gofdt[[d]][[h]][[m]]))
+    }
   }
-  gofdt_v1[[k]] <- data.table(m=names(fit_v1[[k]]),dplyr::bind_rows(gofdt_v1[[k]]))
 }
+save(gofdt, file = "2_output/all_fits.RData")
 
-gofdt_v2 <- list()
-for (k in names(fit_v2)){
-  for (i in 1:length(fit_v2[[k]])){
-    x <- fitMeasures(fit_v2[[k]][[i]])[c("chisq.scaled","df.scaled","pvalue.scaled","cfi.scaled","tli.scaled","rmsea.scaled","srmr_mplus","aic","bic","bic2","logl","npar","scaling.factor.h0")]
-    
-    gofdt_v2[[k]][[i]] <- setNames(as.numeric(x),c("X2","df","pvalue","CFI","TLI","RMSEA","SRMR","AIC","BIC","aBIC","LL","par","LLcorrectf"))
-  }
-  gofdt_v2[[k]] <- data.table(m=names(fit_v2[[k]]),dplyr::bind_rows(gofdt_v2[[k]]))
-}
 
 ## Compare ####
 ### Function
@@ -70,55 +69,58 @@ gof.comp  = function(data, pairs,
 }
 
 ### Are the effects equal across time? (Model 1 vs Model 2)
-comp1_v1 <- list()
-for (k in names(gofdt_v1)){
-  comp1_v1[[k]] <- gof.comp(data = gofdt_v1[[k]], pairs = list(c("a2","a1"),c("b2","b1"),c("c2","c1"),c("d2","d1")))
-}
-
-comp1_v2 <- list()
-for (k in names(gofdt_v2)){
-  comp1_v2[[k]] <- gof.comp(data = gofdt_v2[[k]], pairs = list(c("a2","a1"),c("b2","b1"),c("c2","c1"),c("d2","d1")))
+comp1 <- list()
+for (i in 1:length(fit)){
+  d <- paste0("data",i,sep="")
+  comp1[[d]] <- list()
+  for (h in names(fit[[i]])){ # over hypo
+    comp1[[d]][[h]] <- list()
+    for (m in names(fit[[i]][[h]])){ # over mod
+      comp1[[d]][[h]][[m]] <- data.table(s=m,
+                                         gof.comp(data = gofdt[[d]][[h]][[m]], 
+                                                  pairs = list(c("a2","a1"),c("b2","b1"),c("c2","c1"),c("d2","d1"))))
+      }
+    comp1[[d]][[h]] <- dplyr::bind_rows(comp1[[d]][[h]])
+  }
 }
 
 ### What is the direction of dependence? (Model A vs Model B...)
-comp2_v1 <- list()
-for (k in names(gofdt_v1)){
-  comp2_v1[[k]] <- gof.comp(data = gofdt_v1[[k]], pairs =list(c("a2","b2"),c("a2","c2"),c("a2","d2"),c("b2","d2"),c("c2","d2")))
-}
-
-comp2_v2 <- list()
-for (k in names(gofdt_v2)){
-  comp2_v2[[k]] <- gof.comp(data = gofdt_v2[[k]], pairs =list(c("a2","b2"),c("a2","c2"),c("a2","d2"),c("b2","d2"),c("c2","d2")))
+comp2 <- list()
+for (i in 1:length(fit)){
+  d <- paste0("data",i,sep="")
+  comp2[[d]] <- list()
+  for (h in names(fit[[i]])){ # over hypo
+    comp2[[d]][[h]] <- list()
+    for (m in names(fit[[i]][[h]])){ # over mod
+      comp2[[d]][[h]][[m]] <- data.table(s=m,
+                                         gof.comp(data = gofdt[[d]][[h]][[m]], 
+                                                  pairs = list(c("a2","b2"),c("a2","c2"),c("a2","d2"),c("b2","d2"),c("c2","d2"))))
+    }
+    comp2[[d]][[h]] <- dplyr::bind_rows(comp2[[d]][[h]])
+  }
 }
 
 
 # SAVE ####
-for (i in names(gofdt_v1)) {
-  xlsx::write.xlsx(gofdt_v1[[i]], "2_output/3_gof/gof_v1.xlsx", 
-                   sheetName=i, 
-                   row.names = FALSE,
-                   append=TRUE)
+
+# SAVE ####
+for (i in names(gofdt)){
+  file <- paste0("2_output/3_gof/gof_",i,".xlsx")
+  for (k in 1:length(gofdt[[i]])) {
+    xlsx::write.xlsx(dplyr::bind_rows(gofdt[[i]][[k]]), file, 
+                     sheetName=names(gofdt[[i]])[k], 
+                     row.names = FALSE,
+                     append=TRUE)
+  }
 }
 
-for (i in names(gofdt_v2)) {
-  xlsx::write.xlsx(gofdt_v2[[i]], "2_output/3_gof/gof_v2.xlsx", 
-                   sheetName=i, 
-                   row.names = FALSE,
-                   append=TRUE)
+for (i in names(comp1)){
+  file <- paste0("2_output/3_gof/gofcomp_",i,".xlsx")
+  for (k in 1:length(comp1[[i]])) {
+    xlsx::write.xlsx(dplyr::bind_rows(list(comp1[[i]][[k]],comp2[[i]][[k]])), file, 
+                     sheetName=names(comp1[[i]])[k], 
+                     row.names = FALSE,
+                     append=TRUE)
+  }
 }
-
-for (i in names(comp1_v1)) {
-  xlsx::write.xlsx(dplyr::bind_rows(list(comp1_v1[[i]],comp2_v1[[i]])), "2_output/3_gof/compgof_v1.xlsx", 
-                   sheetName=i, 
-                   row.names = FALSE,
-                   append=TRUE)
-}
-
-for (i in names(comp1_v2)) {
-  xlsx::write.xlsx(dplyr::bind_rows(list(comp1_v2[[i]],comp2_v2[[i]])), "2_output/3_gof/compgof_v2.xlsx", 
-                   sheetName=i, 
-                   row.names = FALSE,
-                   append=TRUE)
-}
-
 save.image(file = "2_output/environ.RData")

@@ -20,67 +20,79 @@ library(lavaan)
 load("2_output/environ.RData")
 
 ## Load Data
-dtv1 <- fread("0_data/data_sel_v1.csv")
-dtv2 <- fread("0_data/data_sel_v2.csv")
+data <- list(fread("0_data/data_sel_v1.csv"),fread("0_data/data_sel_v2.csv"))
 
 ## There are empty cases!
-# table(rowSums(is.na(dt[,-1]))) # 92 cases with data in just one variable
-dtv1 <- dtv1[rowSums(is.na(dtv1[,-1])) < ncol(dtv1[,-1])-1, ]
-dtv2 <- dtv2[rowSums(is.na(dtv2[,-1])) < ncol(dtv2[,-1])-1, ]
+# table(rowSums(is.na(data[[1]][,-1]))) # 92 cases with data in just one variable
+# table(rowSums(is.na(data[[2]][,-1]))) # 92 cases with data in just one variable
+for (i in 1:length(data)){
+  data[[i]] <- data[[i]][rowSums(is.na(data[[i]][,-1])) < ncol(data[[i]][,-1])-1, ]
+}
 
 # ESTIMATION ####
+## WHAT ARE WE ESTIMATING? ####
+hypothesis <- c("med.pca","med.atd","med.rwa")
+models <- c("m1","m2","m3")
 effects <- c("a1","a2","b1","b2","c1","c2","d1","d2")
-fit_v1 <- list()
-fit_v2 <- list()
-for (k in names(M)){
-  bw <- M[[k]][["bwcomp"]]
-  vc <- M[[k]][["varcov"]]
-  for (i in effects){
-    ef <- M[[k]][[i]]
-    fit_v1[[k]][[i]] <- lavaan(model = c(bw,ef,vc),
-                            data = dtv1, 
-                            estimator = "MLR", 
-                            missing = "FIML",
-                            meanstructure = T, 
-                            int.ov.free = T)
-    fit_v2[[k]][[i]] <- lavaan(model = c(bw,ef,vc),
-                            data = dtv2, 
-                            estimator = "MLR", 
-                            missing = "FIML",
-                            meanstructure = T, 
-                            int.ov.free = T)
-  }
-}
 
-est_v1 <- list()
-for (k in names(fit_v1)){
-  for (i in 1:length(fit_v1[[k]])){
-    est_v1[[k]][[names(fit_v1[[k]])[i]]] <- data.table(model=names(fit_v1[[k]])[i],parameterEstimates(fit_v1[[k]][[i]]))
+fit <- list()
+for (d in 1:length(data)){
+  dt <- data[[d]]
+  
+  fit[[d]] <- list()
+  for (h in hypothesis){
+    fit[[d]][[h]] <- list() 
+    # Between and within part
+    code_bw <- HYPOTH[["bw"]][[h]]
+    # Varcov part (common)
+    code_vc <- HYPOTH[["vc"]]
+    for (m in models){
+      fit[[d]][[h]][[m]] <- list()
+      for (e in effects){
+        # Effects
+        code_ef <- MODELS[[m]][[e]]
+        fit[[d]][[h]][[m]][[e]] <- lavaan(model = c(code_bw,code_ef,code_vc),
+                           data = dt,
+                           estimator = "MLR",
+                           missing = "FIML",
+                           meanstructure = T,
+                           int.ov.free = T)
+        }
+    }
   }
-  est_v1[[k]] <- data.table(set=k,dplyr::bind_rows(est_v1[[k]]))
-}
-est_v2 <- list()
-for (k in names(fit_v2)){
-  for (i in 1:length(fit_v2[[k]])){
-    est_v2[[k]][[names(fit_v2[[k]])[i]]] <- data.table(model=names(fit_v2[[k]])[i],parameterEstimates(fit_v2[[k]][[i]]))
-  }
-  est_v2[[k]] <- data.table(set=k,dplyr::bind_rows(est_v2[[k]]))
-}
+  }  
 
+save(fit, file = "2_output/all_fits.RData")
+
+
+est <- list()
+for (i in 1:length(fit)){
+  d <- paste0("data",i,sep="")
+  est[[d]] <- list()
+  for (h in names(fit[[i]])){ # over hypo
+    est[[d]][[h]] <- list()
+    for (m in names(fit[[i]][[h]])){ # over mod
+      est[[d]][[h]][[m]] <- list()
+      for (e in names(fit[[i]][[h]][[m]])){ # over eff
+        est[[d]][[h]][[m]][[e]] <- data.table(model=e,parameterEstimates(fit[[i]][[h]][[m]][[e]]))
+      }
+      est[[d]][[h]][[m]] <- data.table(set=m,dplyr::bind_rows(est[[d]][[h]][[m]]))
+    }
+    est[[d]][[h]] <- data.table(hypo=h,dplyr::bind_rows(est[[d]][[h]]))
+  }
+}
 
 # SAVE ####
-for (i in names(est_v1)) {
-  xlsx::write.xlsx(est_v1[[i]], "2_output/2_estimates/unstandardized_v1.xlsx", 
-                   sheetName=i, 
+for (i in names(est)){
+  file <- paste0("2_output/2_estimates/unst_",i,".xlsx")
+  for (k in 1:length(est[[i]])) {
+  xlsx::write.xlsx(est[[i]][[k]], file, 
+                   sheetName=names(est[[i]])[k], 
                    row.names = FALSE,
                    append=TRUE)
+  }
 }
-for (i in names(est_v2)) {
-  xlsx::write.xlsx(est_v2[[i]], "2_output/2_estimates/unstandardized_v2.xlsx", 
-                   sheetName=i, 
-                   row.names = FALSE,
-                   append=TRUE)
-}
+
 
 
 save.image(file = "2_output/environ.RData")
