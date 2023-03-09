@@ -1,5 +1,5 @@
 ######################################
-# 4.- Correlations
+# 4.- Correlations and summary
 # rsalaslewin@gmail.com
 # Rev. March 2023
 ######################################
@@ -34,6 +34,26 @@ export(sheets1, "2_output/1_alpha/correlations_v1.xlsx", rowNames = T)
 
 sheets2 <- list("Cor" = pearson2, "P" = p2)
 export(sheets2, "2_output/1_alpha/correlations_v2.xlsx", rowNames = T)
+
+###---SUMMARY STATISTICS.
+
+summary1 <- data1 %>%
+            summarise(across(everything(), 
+                             list(min = min, max = max, mean = mean, sd = sd), na.rm = T)) %>%
+            pivot_longer(cols = everything(),
+                         names_sep = "_",
+                         names_to  = c("variable", ".value"))
+
+summary2 <- data2 %>%
+  summarise(across(everything(), 
+                   list(min = min, max = max, mean = mean, sd = sd), na.rm = T)) %>%
+  pivot_longer(cols = everything(),
+               names_sep = "_",
+               names_to  = c("variable", ".value"))
+
+export(summary1, "2_output/1_alpha/summary_v1.xlsx", rowNames = F)
+
+export(summary2, "2_output/1_alpha/summary_v2.xlsx", rowNames = F)
 
 
 
