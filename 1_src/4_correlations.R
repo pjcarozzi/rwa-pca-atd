@@ -13,16 +13,25 @@ pacman::p_load(readxl, data.table, lubridate, stringr, tidyverse, dplyr,
 
 setwd("/Users/rsalaslewin/Dropbox/LAB/Democracia y Participación/Repositorio/")
 
-data <- import("0_data/data_sel_v2.csv") %>% 
+data1 <- import("0_data/data_sel_v1.csv") %>% 
+  select(-ID)
+
+data2 <- import("0_data/data_sel_v2.csv") %>% 
         select(-ID)
 
 ###---CORRELATION MATRIX.
 
-cor <- as.data.frame(cor(data,
+cor1 <- as.data.frame(cor(data1,
                          use = "pairwise.complete.obs",
                          method = "pearson"))
 
-export(cor, "2_output/1_alpha/correlations.xlsx", rowNames = T)
+cor2 <- as.data.frame(cor(data2,
+                          use = "pairwise.complete.obs",
+                          method = "pearson"))
+
+export(cor1, "2_output/1_alpha/correlations_v1.xlsx", rowNames = T)
+
+export(cor2, "2_output/1_alpha/correlations_v2.xlsx", rowNames = T)
 
 
 
