@@ -17,7 +17,7 @@ library(dplyr)
 library(lavaan)
 
 ## Load Environment
-load("2_output/environ.RData")
+load("2_output/all_fits.RData")
 
 # GOF MEASURES ####
 
@@ -38,7 +38,7 @@ for (i in 1:length(fit)){
     }
   }
 }
-save(gofdt, file = "2_output/all_fits.RData")
+save(gofdt, file = "2_output/gofdt.RData")
 
 
 ## Compare ####

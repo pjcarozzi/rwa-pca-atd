@@ -20,7 +20,7 @@ library(lavaan)
 load("2_output/environ.RData")
 
 ## Load Data
-data <- list(fread("0_data/data_sel_v1.csv"),fread("0_data/data_sel_v2.csv"))
+data <- list(fread("0_data/data_sel_v1.csv"),fread("0_data/data_sel_v2.csv"),fread("0_data/data_sel_v3.csv"))
 
 ## There are empty cases!
 # table(rowSums(is.na(data[[1]][,-1]))) # 92 cases with data in just one variable
@@ -74,7 +74,7 @@ for (i in 1:length(fit)){
     for (m in names(fit[[i]][[h]])){ # over mod
       est[[d]][[h]][[m]] <- list()
       for (e in names(fit[[i]][[h]][[m]])){ # over eff
-        est[[d]][[h]][[m]][[e]] <- data.table(model=e,parameterEstimates(fit[[i]][[h]][[m]][[e]]))
+        est[[d]][[h]][[m]][[e]] <- data.table(model=e,parameterEstimates(fit[[i]][[h]][[m]][[e]],standardized = T))
       }
       est[[d]][[h]][[m]] <- data.table(set=m,dplyr::bind_rows(est[[d]][[h]][[m]]))
     }
@@ -84,7 +84,7 @@ for (i in 1:length(fit)){
 
 # SAVE ####
 for (i in names(est)){
-  file <- paste0("2_output/2_estimates/unst_",i,".xlsx")
+  file <- paste0("2_output/2_estimates/estimates_",i,".xlsx")
   for (k in 1:length(est[[i]])) {
   xlsx::write.xlsx(est[[i]][[k]], file, 
                    sheetName=names(est[[i]])[k], 
