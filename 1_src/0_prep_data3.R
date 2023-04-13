@@ -13,6 +13,7 @@ here::i_am("1_src/0_prep_data3.R")
 
 ## Libraries ####
 library(data.table) 
+library(rio)
 
 ## Data: Fondecyt Regular Nº1161371 ####
 raw <- fread("0_data/e5_long_sin_escalas.csv")
@@ -76,15 +77,15 @@ dt <- dt[rowSums(is.na(dt[,-1])) != ncol(dt[,-1]), ]
 
 # SAVE ####
 ## Alpha ####
-xlsx::write.xlsx(alpha_total, "2_output/1_alpha/alpha_v3.xlsx", 
+export(alpha_total, "2_output/1_alpha/alpha_v3.xlsx", 
                  sheetName="total", 
-                 row.names = FALSE,
+                 rowNames = FALSE,
                  append=F)
 
 for (i in names(alpha_drop)) {
-  xlsx::write.xlsx(alpha_drop[[i]], "2_output/1_alpha/alpha_v3.xlsx", 
+  export(alpha_drop[[i]], "2_output/1_alpha/alpha_v3.xlsx", 
                    sheetName=paste0(i,"_drop",sep=""), 
-                   row.names = FALSE,
+                   rowNames = FALSE,
                    append=TRUE)
 }
 

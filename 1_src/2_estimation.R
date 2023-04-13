@@ -15,6 +15,7 @@ here::i_am("1_src/2_estimation.R")
 library(data.table) 
 library(dplyr)
 library(lavaan)
+library(rio)
 
 ## Load Environment
 load("2_output/environ.RData")
@@ -31,8 +32,8 @@ for (i in 1:length(data)){
 
 # ESTIMATION ####
 ## WHAT ARE WE ESTIMATING? ####
-hypothesis <- c("med.pca","med.atd","med.rwa")
-models <- c("m1","m2","m3")
+hypothesis <- c("med.pca")
+models <- c("m1")
 effects <- c("a1","a2","b1","b2","c1","c2","d1","d2")
 
 fit <- list()
@@ -86,9 +87,9 @@ for (i in 1:length(fit)){
 for (i in names(est)){
   file <- paste0("2_output/2_estimates/estimates_",i,".xlsx")
   for (k in 1:length(est[[i]])) {
-  xlsx::write.xlsx(est[[i]][[k]], file, 
+  export(est[[i]][[k]], file, 
                    sheetName=names(est[[i]])[k], 
-                   row.names = FALSE,
+                   rowNames = FALSE,
                    append=TRUE)
   }
 }

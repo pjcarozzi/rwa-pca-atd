@@ -15,6 +15,7 @@ here::i_am("1_src/2_estimation.R")
 library(data.table) 
 library(dplyr)
 library(lavaan)
+library(rio)
 
 ## Load Environment
 load("2_output/all_fits.RData")
@@ -107,9 +108,9 @@ for (i in 1:length(fit)){
 for (i in names(gofdt)){
   file <- paste0("2_output/3_gof/gof_",i,".xlsx")
   for (k in 1:length(gofdt[[i]])) {
-    xlsx::write.xlsx(dplyr::bind_rows(gofdt[[i]][[k]]), file, 
+    export(dplyr::bind_rows(gofdt[[i]][[k]]), file, 
                      sheetName=names(gofdt[[i]])[k], 
-                     row.names = FALSE,
+                     rowNames = FALSE,
                      append=TRUE)
   }
 }
@@ -117,9 +118,9 @@ for (i in names(gofdt)){
 for (i in names(comp1)){
   file <- paste0("2_output/3_gof/gofcomp_",i,".xlsx")
   for (k in 1:length(comp1[[i]])) {
-    xlsx::write.xlsx(dplyr::bind_rows(list(comp1[[i]][[k]],comp2[[i]][[k]])), file, 
+    export(dplyr::bind_rows(list(comp1[[i]][[k]],comp2[[i]][[k]])), file, 
                      sheetName=names(comp1[[i]])[k], 
-                     row.names = FALSE,
+                     rowNames = FALSE,
                      append=TRUE)
   }
 }
